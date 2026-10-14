@@ -13,7 +13,7 @@ public class NBPXmlParser : IParser<ICurrencyCollection>
     {
         if(dataString is null)
         {
-            return Result<ICurrencyCollection>.Failure($"{nameof(dataString)} is null");
+            return Result<ICurrencyCollection>.Failure($"{nameof(dataString)} jest nullem");
         }
 
         XElement? root;
@@ -23,12 +23,12 @@ public class NBPXmlParser : IParser<ICurrencyCollection>
         }
         catch (XmlException e)
         {
-            return Result<ICurrencyCollection>.Failure($"Invalid XML: {e.Message}");
+            return Result<ICurrencyCollection>.Failure($"Nieprawidłowy XML: {e.Message}");
         }
 
         if (root == null)
         {
-            return Result<ICurrencyCollection>.Failure("NBP document has no root element.");
+            return Result<ICurrencyCollection>.Failure("Dokument NBP nie ma głównego elementu (roota).");
         }
 
         ICurrencyCollection currencies = new CurrencyCollection();
@@ -48,7 +48,7 @@ public class NBPXmlParser : IParser<ICurrencyCollection>
 
         if (parsed == 0)
         {
-            return Result<ICurrencyCollection>.Failure("NBP document contains no currency rates.");
+            return Result<ICurrencyCollection>.Failure("Dokument NBP nie zawiera żadnych walut/kursów.");
         }
 
         return Result<ICurrencyCollection>.Success(currencies);
@@ -63,17 +63,17 @@ public class NBPXmlParser : IParser<ICurrencyCollection>
 
         if (name == null || code == null || rateText == null || multiplierText == null)
         {
-            return Result<Currency>.Failure($"Incomplete <pozycja> entry in NBP document{(code != null ? $" ({code})" : "")}.");
+            return Result<Currency>.Failure($"Niekompletny Node <pozycja> w Dokumencie NBP{(code != null ? $", kod waluty: ({code})" : "")}.");
         }
 
         if (!TryParseNumber(rateText, out decimal rate))
         {
-            return Result<Currency>.Failure($"Invalid rate '{rateText}' for {code}.");
+            return Result<Currency>.Failure($"Nieprawidłowa stawka: '{rateText}' dla {code}.");
         }
 
         if (!TryParseNumber(multiplierText, out decimal multiplier))
         {
-            return Result<Currency>.Failure($"Invalid multiplier '{multiplierText}' for {code}.");
+            return Result<Currency>.Failure($"Nieprawidłowwy mnożnik: '{multiplierText}' dla {code}.");
         }
 
         return Currency.Create(name, code, rate, multiplier);

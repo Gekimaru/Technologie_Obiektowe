@@ -22,17 +22,17 @@ public class Currency : ICurrency
     {
         if (string.IsNullOrWhiteSpace(code))
         {
-            return Result<Currency>.Failure("Currency code cannot be empty.");
+            return Result<Currency>.Failure("Oznaczenie waluty nie może byc puste.");
         }
 
         if (rate <= 0M)
         {
-            return Result<Currency>.Failure($"Rate of {code} must be positive, got {rate}.");
+            return Result<Currency>.Failure($"Kurs waluty: {code} musi być pozytywny a wyniósł: {rate}.");
         }
 
         if (multiplier <= 0M)
         {
-            return Result<Currency>.Failure($"Multiplier of {code} must be positive, got {multiplier}.");
+            return Result<Currency>.Failure($"Mnożnik waluty {code} musi byc pozytywny a wyniósł: {multiplier}.");
         }
 
         return Result<Currency>.Success(new Currency(name, code.Trim().ToUpper(), rate, multiplier));

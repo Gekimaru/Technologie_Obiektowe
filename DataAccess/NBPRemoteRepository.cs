@@ -31,7 +31,7 @@ public class NBPRemoteRepository : IRemoteRepository
         }
         catch (Exception e)
         {
-            return Result<string>.Failure($"NBP request failed: {e.Message}");
+            return Result<string>.Failure($"¯¹danie do NBP nie powiod³o siê: {e.Message}");
         }
     }
 }
