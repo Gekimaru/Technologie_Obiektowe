@@ -8,7 +8,7 @@ public class Currency : ICurrency
     public string Code { get; }
     public decimal Rate { get; }
     public decimal Multiplier { get; }
-    public decimal UnitRate => Rate / Multiplier;
+    public decimal UnitRate { get =>  Rate / Multiplier; }
 
     private Currency(string name, string code, decimal rate, decimal multiplier)
     {
@@ -33,6 +33,11 @@ public class Currency : ICurrency
         if (multiplier <= 0M)
         {
             return Result<Currency>.Failure($"Mnożnik waluty {code} musi byc pozytywny a wyniósł: {multiplier}.");
+        }
+
+        if(rate / multiplier <= 0M)
+        {
+            return Result<Currency>.Failure($"Wartość przy kursie waluty {code}, dla twojej kwoty, jest zbyt mała bym ją obliczył.");
         }
 
         return Result<Currency>.Success(new Currency(name, code.Trim().ToUpper(), rate, multiplier));

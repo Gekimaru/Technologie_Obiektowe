@@ -46,6 +46,13 @@ public class CurrencyService
             return amount;
         }
 
-        return Result<decimal>.Success(_converter.Convert(source, target, amount.Value));
+        try
+        {
+            Result<decimal>.Success(_converter.Convert(source, target, amount.Value));
+        }
+        catch (OverflowException)
+        {
+            return Result<decimal>.Failure("Wynik jest zbyt duży, nastąpiło przepełnienie :<");
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq.Expressions;
 using CurrencyConverter.Model;
 
 namespace CurrencyConverter.Services;
@@ -29,6 +30,11 @@ public static class MoneyAmountParser
         if (!decimal.TryParse(normalized, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal amount))
         {
             return Result<decimal>.Failure("Niepoprawna kwota.");
+        }
+
+        if (Math.Abs(amount) > 1_000_000_000_000M)
+        {
+            return Result<decimal>.Failure("Kwota jest za duża, przekracza ona 1*10^12");
         }
 
         return Result<decimal>.Success(amount);
