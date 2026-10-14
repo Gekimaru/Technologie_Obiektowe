@@ -28,10 +28,11 @@ wynik       = kwota_w_PLN / (kurs_docelowej / przelicznik_docelowej)
 ```
 CurrencyConverter/
 ├── Program.cs                        composition root – tworzy konkretne klasy i łączy je ze sobą
-├── CurrencyConverterView.cs          formularz (Form) – tylko kontrolki i start ładowania
-├── CurrencyConverterView.Designer.cs
+├── ClassDiagram.mmd                  diagram klas UML (Mermaid)
 ├── View/
-│   └── DefaultView.cs                obsługa kontrolek: wypełnianie list, kliknięcie, wyświetlanie wyniku
+│   ├── CurrencyConverterView.cs      formularz (Form) – tylko kontrolki i start ładowania
+│   ├── CurrencyConverterView.Designer.cs
+│   └── ConverterPresenter.cs         obsługa kontrolek: wypełnianie list, kliknięcie, wyświetlanie wyniku
 ├── Services/
 │   ├── CurrencyService.cs            przypadki użycia: załaduj kursy, przelicz kwotę
 │   └── MoneyAmountParser.cs          walidacja i parsowanie wpisanej kwoty
@@ -52,7 +53,7 @@ CurrencyConverter/
 
 | Warstwa | Klasy | Odpowiedzialność |
 |---|---|---|
-| Prezentacja | `CurrencyConverterView`, `DefaultView` | kontrolki, zdarzenia, wyświetlanie |
+| Prezentacja | `CurrencyConverterView`, `ConverterPresenter` | kontrolki, zdarzenia, wyświetlanie |
 | Aplikacja | `CurrencyService`, `MoneyAmountParser` | przypadki użycia, walidacja danych od użytkownika |
 | Domena | `Currency`, `CurrencyCollection`, `NBPCurrencyConverter`, `Result<T>` | dane i reguły biznesowe, obliczenia |
 | Infrastruktura | `NBPRemoteRepository`, `NBPXmlParser` | sieć, format XML |
@@ -71,12 +72,15 @@ granicy z bibliotekami (`HttpClient`, `XDocument.Parse`) i zamieniane na `Result
 - **kwota** (`MoneyAmountParser`)
   - spacje są ignorowane, separator dziesiętny `.` lub `,` (najwyżej jeden)
   - dozwolone są tylko cyfry i opcjonalny minus na początku, bez notacji naukowej
+  - wartość bezwzględna najwyżej 1 000 000 000 000, więc wynik zawsze mieści się w `decimal`
+    (dodatkowo `CurrencyService` łapie `OverflowException` jako zabezpieczenie)
   - pusta kwota → komunikat
 - **waluty** (`CurrencyService`): obie muszą być wybrane i muszą się różnić
 - **dane z NBP** (`NBPXmlParser`, `Currency.Create`)
   - niepoprawny XML, brak elementu głównego albo brak pozycji → komunikat
   - każda `<pozycja>` musi mieć nazwę, kod, kurs i przelicznik
-  - kod nie może być pusty, kurs i przelicznik muszą być większe od 0
+  - kod nie może być pusty, kurs i przelicznik muszą być większe od 0,
+    a kurs za jednostkę (`Rate / Multiplier`) nie może zaokrąglić się do 0
 - **sieć** (`NBPRemoteRepository`): brak połączenia lub timeout → komunikat zamiast awarii
 - listy walut są typu `DropDownList`, więc nie da się wpisać waluty spoza tabeli
 
@@ -84,7 +88,7 @@ granicy z bibliotekami (`HttpClient`, `XDocument.Parse`) i zamieniane na `Result
 
 - **S** – każda klasa ma jedno zadanie: pobieranie (`NBPRemoteRepository`), parsowanie
   (`NBPXmlParser`), przechowywanie (`CurrencyCollection`), liczenie (`NBPCurrencyConverter`),
-  przypadki użycia (`CurrencyService`), walidacja kwoty (`MoneyAmountParser`), obsługa kontrolek (`DefaultView`).
+  przypadki użycia (`CurrencyService`), walidacja kwoty (`MoneyAmountParser`), obsługa kontrolek (`ConverterPresenter`).
 - **O** – inne źródło danych albo format (np. API JSON NBP) to nowa implementacja `IRemoteRepository`
   lub `IParser<ICurrencyCollection>`; istniejące klasy zostają bez zmian, zmienia się jedna linia w `Program`.
 - **L** – dowolna implementacja `ICurrency`, `ICurrencyCollection`, `ICurrencyConverter`,
@@ -95,140 +99,131 @@ granicy z bibliotekami (`HttpClient`, `XDocument.Parse`) i zamieniane na `Result
 
 ## Diagram klas UML
 
+Ten sam diagram jest w pliku [`ClassDiagram.mmd`](ClassDiagram.mmd). Klasy są pogrupowane w warstwy;
+`Result<T>` jest używany przez wszystkie warstwy, więc nie ma przy nim strzałek.
+
 ```mermaid
 classDiagram
     direction TB
 
-    class Program {
-        +Main()$ int
+    namespace Prezentacja {
+        class Program {
+            +Main()$ int
+        }
+        class CurrencyConverterView {
+            -_currencyService: CurrencyService
+            -_presenter: ConverterPresenter
+            +CurrencyConverterView(currencyService: CurrencyService)
+            -Form1_Load(sender, e) void
+        }
+        class ConverterPresenter {
+            -_sourceCurrencyC: ComboBox
+            -_targetCurrencyC: ComboBox
+            -_amountCurrencyC: TextBox
+            -_submitButtonC: Button
+            -_resultLabel: Label
+            -_currencyService: CurrencyService
+            +Exchange(sender, e) void
+            +Refresh(currencyCollection: ICurrencyCollection) void
+            +ShowError(message: string) void
+            -ShowInfo(message: string) void
+        }
     }
 
-    %% Prezentacja
-    class CurrencyConverterView {
-        -_currencyService: CurrencyService
-        -_defaultView: DefaultView
-        +CurrencyConverterView(currencyService: CurrencyService)
-        -Form1_Load(sender, e) void
-        -ShowError(message: string) void
-    }
-    class DefaultView {
-        -_sourceCurrencyC: ComboBox
-        -_targetCurrencyC: ComboBox
-        -_amountCurrencyC: TextBox
-        -_submitButtonC: Button
-        -_resultLabel: Label
-        -_currencyService: CurrencyService
-        +DefaultView(currencyService, sourceCurrency, targetCurrency, amountCurrency, submitButton, resultLabel)
-        +Exchange(sender, e) void
-        +Refresh(currencyCollection: ICurrencyCollection) void
+    namespace Aplikacja {
+        class CurrencyService {
+            -_remoteRepository: IRemoteRepository
+            -_parser: IParser~ICurrencyCollection~
+            -_converter: ICurrencyConverter
+            +LoadAsync() Task~Result~ICurrencyCollection~~
+            +Convert(source: ICurrency?, target: ICurrency?, amountText: string) Result~decimal~
+        }
+        class MoneyAmountParser {
+            <<static>>
+            +Parse(input: string)$ Result~decimal~
+        }
     }
 
-    %% Aplikacja
-    class CurrencyService {
-        -_remoteRepository: IRemoteRepository
-        -_parser: IParser~ICurrencyCollection~
-        -_converter: ICurrencyConverter
-        +LoadAsync() Task~Result~ICurrencyCollection~~
-        +Convert(source: ICurrency?, target: ICurrency?, amountText: string) Result~decimal~
-    }
-    class MoneyAmountParser {
-        <<static>>
-        +Parse(input: string)$ Result~decimal~
-    }
-
-    %% Domena
-    class ICurrency {
-        <<interface>>
-        +Name: string
-        +Code: string
-        +Rate: decimal
-        +Multiplier: decimal
-        +UnitRate: decimal
-    }
-    class Currency {
-        +Pln: Currency$
-        -Currency(name, code, rate, multiplier)
-        +Create(name, code, rate, multiplier)$ Result~Currency~
-        +ToString() string
-    }
-    class ICurrencyCollection {
-        <<interface>>
-        +Add(currency: ICurrency) void
-        +Remove(code: string) void
-        +Get(code: string) ICurrency?
-        +GetAll() ICurrency[]
-    }
-    class CurrencyCollection {
-        -_currencies: Dictionary~string, ICurrency~
-        +CurrencyCollection()
-    }
-    class ICurrencyConverter {
-        <<interface>>
-        +Convert(source: ICurrency, target: ICurrency, amount: decimal) decimal
-    }
-    class NBPCurrencyConverter {
-        +Convert(source: ICurrency, target: ICurrency, amount: decimal) decimal
-    }
-    class Result~T~ {
-        +IsSuccess: bool
-        +Value: T?
-        +Error: string?
-        +Success(value: T)$ Result~T~
-        +Failure(error: string)$ Result~T~
+    namespace Infrastruktura {
+        class IRemoteRepository {
+            <<interface>>
+            +GetData() Task~Result~string~~
+        }
+        class NBPRemoteRepository {
+            -Client: HttpClient$
+            -_url: string
+            +GetData() Task~Result~string~~
+        }
+        class IParser~T~ {
+            <<interface>>
+            +Parse(data: string) Result~T~
+        }
+        class NBPXmlParser {
+            +Parse(data: string) Result~ICurrencyCollection~
+            -ParseCurrency(position: XElement)$ Result~Currency~
+        }
     }
 
-    %% Infrastruktura
-    class IRemoteRepository {
-        <<interface>>
-        +GetData() Task~Result~string~~
-    }
-    class NBPRemoteRepository {
-        -DefaultUrl: string$
-        -NbpEncoding: string$
-        -Client: HttpClient$
-        -_url: string
-        +NBPRemoteRepository(url: string)
-        +GetData() Task~Result~string~~
-    }
-    class IParser~T~ {
-        <<interface>>
-        +Parse(data: string) Result~T~
-    }
-    class NBPXmlParser {
-        -NbpNumberFormat: NumberFormatInfo$
-        +Parse(data: string) Result~ICurrencyCollection~
-        -ParseCurrency(position: XElement)$ Result~Currency~
-        -TryParseNumber(text: string, out value: decimal)$ bool
-        -GetNodeChildByName(parent: XElement, name: string)$ string?
+    namespace Domena {
+        class ICurrencyConverter {
+            <<interface>>
+            +Convert(source: ICurrency, target: ICurrency, amount: decimal) decimal
+        }
+        class NBPCurrencyConverter {
+            +Convert(source: ICurrency, target: ICurrency, amount: decimal) decimal
+        }
+        class ICurrencyCollection {
+            <<interface>>
+            +Add(currency: ICurrency) void
+            +Remove(code: string) void
+            +Get(code: string) ICurrency?
+            +GetAll() ICurrency[]
+        }
+        class CurrencyCollection {
+            -_currencies: Dictionary~string, ICurrency~
+        }
+        class ICurrency {
+            <<interface>>
+            +Name: string
+            +Code: string
+            +Rate: decimal
+            +Multiplier: decimal
+            +UnitRate: decimal
+        }
+        class Currency {
+            +Pln: Currency$
+            -Currency(name, code, rate, multiplier)
+            +Create(name, code, rate, multiplier)$ Result~Currency~
+        }
+        class Result~T~ {
+            +IsSuccess: bool
+            +Value: T?
+            +Error: string?
+            +Success(value: T)$ Result~T~
+            +Failure(error: string)$ Result~T~
+        }
     }
 
-    %% Realizacje interfejsów
-    Currency ..|> ICurrency
-    CurrencyCollection ..|> ICurrencyCollection
-    NBPCurrencyConverter ..|> ICurrencyConverter
-    NBPRemoteRepository ..|> IRemoteRepository
-    NBPXmlParser ..|> IParser : T = ICurrencyCollection
-
-    %% Powiązania
-    Program ..> CurrencyService : tworzy
     Program ..> CurrencyConverterView : tworzy
-    Program ..> NBPRemoteRepository : tworzy
-    Program ..> NBPXmlParser : tworzy
-    Program ..> NBPCurrencyConverter : tworzy
+    Program ..> CurrencyService : tworzy
 
+    CurrencyConverterView *-- ConverterPresenter
     CurrencyConverterView --> CurrencyService
-    CurrencyConverterView *-- DefaultView
-    DefaultView --> CurrencyService
+    ConverterPresenter --> CurrencyService
 
+    CurrencyService ..> MoneyAmountParser
     CurrencyService o-- IRemoteRepository
     CurrencyService o-- IParser
     CurrencyService o-- ICurrencyConverter
-    CurrencyService ..> MoneyAmountParser
 
-    CurrencyCollection o-- "0..*" ICurrency
-    NBPXmlParser ..> CurrencyCollection : tworzy
+    NBPRemoteRepository ..|> IRemoteRepository
+    NBPXmlParser ..|> IParser
     NBPXmlParser ..> Currency : tworzy
-    ICurrencyConverter ..> ICurrency
+
+    NBPCurrencyConverter ..|> ICurrencyConverter
+    CurrencyCollection ..|> ICurrencyCollection
+    CurrencyCollection o-- "0..*" ICurrency
+    Currency ..|> ICurrency
 ```
 
 ### Legenda
@@ -236,6 +231,6 @@ classDiagram
 - `..|>` – realizacja interfejsu
 - `-->` – asocjacja (klasa trzyma referencję)
 - `o--` – agregacja (zależność wstrzyknięta z zewnątrz, żyje niezależnie)
-- `*--` – kompozycja (`DefaultView` jest tworzony przez formularz i żyje razem z nim)
+- `*--` – kompozycja (`ConverterPresenter` jest tworzony przez formularz i żyje razem z nim)
 - `..>` – zależność (klasa używa albo tworzy drugą)
 - `$` – składowa statyczna

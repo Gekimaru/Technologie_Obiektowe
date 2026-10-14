@@ -48,7 +48,7 @@ public class CurrencyService
 
         try
         {
-            Result<decimal>.Success(_converter.Convert(source, target, amount.Value));
+            return Result<decimal>.Success(_converter.Convert(source, target, amount.Value));
         }
         catch (OverflowException)
         {

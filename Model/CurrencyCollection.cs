@@ -3,7 +3,7 @@ namespace CurrencyConverter.Model;
 public class CurrencyCollection : ICurrencyCollection
 {
     // ignore case samo się tłumaczy
-    private readonly Dictionary<string, ICurrency> _currencies ;
+    private readonly Dictionary<string, ICurrency> _currencies;
 
     public CurrencyCollection()
     {

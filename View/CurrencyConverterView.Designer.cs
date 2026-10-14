@@ -1,4 +1,4 @@
-namespace CurrencyConverter.View
+ï»¿namespace CurrencyConverter.View
 {
     partial class CurrencyConverterView
     {
@@ -54,7 +54,7 @@ namespace CurrencyConverter.View
             label2.Name = "label2";
             label2.Size = new Size(50, 15);
             label2.TabIndex = 9;
-            label2.Text = "Wartoœæ";
+            label2.Text = "WartoÅ›Ä‡";
             // 
             // sourceComboBox
             // 
@@ -79,18 +79,17 @@ namespace CurrencyConverter.View
             convertButton.Name = "convertButton";
             convertButton.Size = new Size(267, 23);
             convertButton.TabIndex = 13;
-            convertButton.Text = "Konwertuj walutê";
+            convertButton.Text = "Konwertuj walutÄ™";
             convertButton.UseVisualStyleBackColor = true;
             // 
             // resultLabel
             // 
-            resultLabel.AutoSize = true;
-            resultLabel.Location = new Point(123, 172);
+            resultLabel.Location = new Point(79, 172);
             resultLabel.Name = "resultLabel";
-            resultLabel.Size = new Size(173, 15);
+            resultLabel.Size = new Size(267, 45);
             resultLabel.TabIndex = 14;
-            resultLabel.Text = "Wpisz kwote i kliknij w przycisk!";
-            resultLabel.TextAlign = ContentAlignment.MiddleCenter;
+            resultLabel.Text = "Pobieranie kursÃ³w NBP...";
+            resultLabel.TextAlign = ContentAlignment.TopCenter;
             // 
             // targetComboBox
             // 

@@ -6,34 +6,26 @@ namespace CurrencyConverter.View
     public partial class CurrencyConverterView : Form
     {
         private CurrencyService _currencyService;
-        private ConverterPresenter _defaultView;
+        private ConverterPresenter _presenter;
 
         public CurrencyConverterView(CurrencyService currencyService)
         {
             InitializeComponent();
 
             _currencyService = currencyService;
-            _defaultView = new ConverterPresenter(_currencyService ,sourceComboBox, targetComboBox, amountTextBox, convertButton, resultLabel);
+            _presenter = new ConverterPresenter(_currencyService, sourceComboBox, targetComboBox, amountTextBox, convertButton, resultLabel);
         }
 
         private async void Form1_Load(object sender, EventArgs e)
         {
-            var result = await _currencyService.LoadAsync();
+            Result<ICurrencyCollection> result = await _currencyService.LoadAsync();
             if (!result.IsSuccess)
             {
-                ShowError(result.Error);
+                _presenter.ShowError(result.Error);
                 return;
             }
 
-            ICurrencyCollection currencies = result.Value;
-
-            _defaultView.Refresh(currencies);
-        }
-
-        private void ShowError(string message)
-        {
-            resultLabel.ForeColor = Color.Firebrick;
-            resultLabel.Text = message;
+            _presenter.Refresh(result.Value);
         }
     }
 }

@@ -11,9 +11,9 @@ public class NBPXmlParser : IParser<ICurrencyCollection>
 
     public Result<ICurrencyCollection> Parse(string dataString)
     {
-        if(dataString is null)
+        if (dataString is null)
         {
-            return Result<ICurrencyCollection>.Failure($"{nameof(dataString)} jest nullem");
+            return Result<ICurrencyCollection>.Failure("Brak danych do sparsowania.");
         }
 
         XElement? root;
@@ -63,17 +63,17 @@ public class NBPXmlParser : IParser<ICurrencyCollection>
 
         if (name == null || code == null || rateText == null || multiplierText == null)
         {
-            return Result<Currency>.Failure($"Niekompletny Node <pozycja> w Dokumencie NBP{(code != null ? $", kod waluty: ({code})" : "")}.");
+            return Result<Currency>.Failure($"Niekompletny element <pozycja> w dokumencie NBP{(code != null ? $" (kod waluty: {code})" : "")}.");
         }
 
         if (!TryParseNumber(rateText, out decimal rate))
         {
-            return Result<Currency>.Failure($"Nieprawidłowa stawka: '{rateText}' dla {code}.");
+            return Result<Currency>.Failure($"Nieprawidłowy kurs: '{rateText}' dla {code}.");
         }
 
         if (!TryParseNumber(multiplierText, out decimal multiplier))
         {
-            return Result<Currency>.Failure($"Nieprawidłowwy mnożnik: '{multiplierText}' dla {code}.");
+            return Result<Currency>.Failure($"Nieprawidłowy przelicznik: '{multiplierText}' dla {code}.");
         }
 
         return Currency.Create(name, code, rate, multiplier);

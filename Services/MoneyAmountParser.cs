@@ -1,10 +1,9 @@
 using System.Globalization;
-using System.Linq.Expressions;
 using CurrencyConverter.Model;
 
 namespace CurrencyConverter.Services;
 
-public static class MoneyAmountParser 
+public static class MoneyAmountParser
 {
     public static Result<decimal> Parse(string input)
     {
@@ -24,7 +23,7 @@ public static class MoneyAmountParser
                 })
             )
         {
-            return Result<decimal>.Failure("Użyj cyfr, opcjonalnie minus oraz pojedyńczy separator do ułamków dziesiętnych, np. -125.50");
+            return Result<decimal>.Failure("Użyj cyfr, opcjonalnie minus oraz pojedynczy separator do ułamków dziesiętnych, np. -125.50");
         }
 
         if (!decimal.TryParse(normalized, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out decimal amount))
@@ -34,7 +33,7 @@ public static class MoneyAmountParser
 
         if (Math.Abs(amount) > 1_000_000_000_000M)
         {
-            return Result<decimal>.Failure("Kwota jest za duża, przekracza ona 1*10^12");
+            return Result<decimal>.Failure("Kwota jest za duża, maksymalnie 1 000 000 000 000.");
         }
 
         return Result<decimal>.Success(amount);

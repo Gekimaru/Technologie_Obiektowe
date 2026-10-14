@@ -8,7 +8,7 @@ public class Currency : ICurrency
     public string Code { get; }
     public decimal Rate { get; }
     public decimal Multiplier { get; }
-    public decimal UnitRate { get =>  Rate / Multiplier; }
+    public decimal UnitRate => Rate / Multiplier;
 
     private Currency(string name, string code, decimal rate, decimal multiplier)
     {
@@ -22,22 +22,23 @@ public class Currency : ICurrency
     {
         if (string.IsNullOrWhiteSpace(code))
         {
-            return Result<Currency>.Failure("Oznaczenie waluty nie może byc puste.");
+            return Result<Currency>.Failure("Kod waluty nie może być pusty.");
         }
 
         if (rate <= 0M)
         {
-            return Result<Currency>.Failure($"Kurs waluty: {code} musi być pozytywny a wyniósł: {rate}.");
+            return Result<Currency>.Failure($"Kurs waluty {code} musi być dodatni, a wynosi {rate}.");
         }
 
         if (multiplier <= 0M)
         {
-            return Result<Currency>.Failure($"Mnożnik waluty {code} musi byc pozytywny a wyniósł: {multiplier}.");
+            return Result<Currency>.Failure($"Przelicznik waluty {code} musi być dodatni, a wynosi {multiplier}.");
         }
 
-        if(rate / multiplier <= 0M)
+        // przy bardzo małym kursie i dużym przeliczniku decimal zaokrągli UnitRate do 0 -> dzielenie przez zero w konwerterze
+        if (rate / multiplier <= 0M)
         {
-            return Result<Currency>.Failure($"Wartość przy kursie waluty {code}, dla twojej kwoty, jest zbyt mała bym ją obliczył.");
+            return Result<Currency>.Failure($"Kurs za jednostkę waluty {code} jest zbyt mały, żeby go policzyć.");
         }
 
         return Result<Currency>.Success(new Currency(name, code.Trim().ToUpper(), rate, multiplier));

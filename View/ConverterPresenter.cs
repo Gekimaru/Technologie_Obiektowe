@@ -1,21 +1,30 @@
-﻿using CurrencyConverter.Model;
+using CurrencyConverter.Model;
 using CurrencyConverter.Services;
 
 namespace CurrencyConverter.View;
-
-
 
 public class ConverterPresenter
 {
     // dałem sobie C od control
     private ComboBox _sourceCurrencyC;
-    
     private ComboBox _targetCurrencyC;
-
     private TextBox _amountCurrencyC;
     private Button _submitButtonC;
     private Label _resultLabel;
     private CurrencyService _currencyService;
+
+    public ConverterPresenter(CurrencyService currencyService, ComboBox sourceCurrency, ComboBox targetCurrency,
+                              TextBox amountCurrency, Button submitButton, Label resultLabel)
+    {
+        _currencyService = currencyService;
+        _sourceCurrencyC = sourceCurrency;
+        _targetCurrencyC = targetCurrency;
+        _amountCurrencyC = amountCurrency;
+        _submitButtonC = submitButton;
+        _resultLabel = resultLabel;
+
+        _submitButtonC.Click += Exchange;
+    }
 
     public void Exchange(object? sender, EventArgs e)
     {
@@ -25,26 +34,11 @@ public class ConverterPresenter
         Result<decimal> result = _currencyService.Convert(sourceCurrency, targetCurrency, _amountCurrencyC.Text);
         if (!result.IsSuccess)
         {
-            _resultLabel.Text = result.Error;
+            ShowError(result.Error);
             return;
         }
 
-        _resultLabel.Text = $"{_amountCurrencyC.Text.Trim()} {sourceCurrency!.Code} = {result.Value:N5} {targetCurrency!.Code}";
-    }
-
-    public ConverterPresenter(CurrencyService currencyService, ComboBox sourceCurrency, ComboBox targetCurrency,
-                       TextBox amountCurrency, Button submitButton, Label resultLabel)
-    {
-        this._sourceCurrencyC = sourceCurrency;
-        this._targetCurrencyC = targetCurrency;
-        this._amountCurrencyC = amountCurrency;
-        this._submitButtonC = submitButton;
-        this._resultLabel = resultLabel;
-        this._currencyService = currencyService;
-
-        this._submitButtonC.Click += Exchange;
-
-
+        ShowInfo($"{_amountCurrencyC.Text.Trim()} {sourceCurrency!.Code} = {result.Value:N5} {targetCurrency!.Code}");
     }
 
     public void Refresh(ICurrencyCollection currencyCollection)
@@ -59,9 +53,22 @@ public class ConverterPresenter
             _sourceCurrencyC.Items.Add(currencies[i]);
             _targetCurrencyC.Items.Add(currencies[i]);
         }
+
         _sourceCurrencyC.SelectedItem = currencyCollection.Get("EUR") ?? currencies[0];
         _targetCurrencyC.SelectedItem = currencyCollection.Get("PLN") ?? currencies[0];
 
-        _resultLabel.Text = "Wpisz kwote i kliknij w przycisk!";
+        ShowInfo("Wpisz kwotę i kliknij w przycisk!");
+    }
+
+    public void ShowError(string message)
+    {
+        _resultLabel.ForeColor = Color.Firebrick;
+        _resultLabel.Text = message;
+    }
+
+    private void ShowInfo(string message)
+    {
+        _resultLabel.ForeColor = SystemColors.ControlText;
+        _resultLabel.Text = message;
     }
 }

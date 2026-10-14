@@ -1,4 +1,4 @@
-using System.Text;
+Ôªøusing System.Text;
 using CurrencyConverter.Model;
 
 namespace CurrencyConverter.DataAccess;
@@ -8,11 +8,17 @@ public class NBPRemoteRepository : IRemoteRepository
     private const string DefaultUrl = "https://static.nbp.pl/dane/kursy/xml/LastA.xml";
     private const string NbpEncoding = "ISO-8859-2";
 
-    // øebym nie czeka≥ tych deafultowych 100s jakby coú by≥o nie tak + uczyli nas øe HttpClient otwiera za kaødym razem po≥πczenie z nowym socketem jak jest tworzony
-    // u pana na wyk≥adzie by≥o using ale te uøyte sockety siÍ nie zwalnia≥y i by≥ edge case. (wiem øe pewnie pan to wie ale mnie bola≥o jak na to patrzy≥em)
+    // ≈ºebym nie czeka≈Ç tych defaultowych 100s jakby co≈õ by≈Ço nie tak + uczyli nas ≈ºe HttpClient otwiera za ka≈ºdym razem po≈ÇƒÖczenie z nowym socketem jak jest tworzony
+    // u pana na wyk≈Çadzie by≈Ço using ale te u≈ºyte sockety siƒô nie zwalnia≈Çy i by≈Ç edge case. (wiem ≈ºe pewnie pan to wie ale mnie bola≈Ço jak na to patrzy≈Çem)
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     private readonly string _url;
+
+    // statyczny konstruktor odpala siƒô raz, przed pierwszym u≈ºyciem klasy ‚Äì ISO-8859-2 wystarczy zarejestrowaƒá raz
+    static NBPRemoteRepository()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    }
 
     public NBPRemoteRepository(string url = DefaultUrl)
     {
@@ -21,9 +27,6 @@ public class NBPRemoteRepository : IRemoteRepository
 
     public async Task<Result<string>> GetData()
     {
-        // to moøna w sumie przenieúÊ do statycznego konstruktora, ale nie jestem tego pewien wiÍc zostawie tak
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
         try
         {
             byte[] bytes = await Client.GetByteArrayAsync(_url);
@@ -31,7 +34,7 @@ public class NBPRemoteRepository : IRemoteRepository
         }
         catch (Exception e)
         {
-            return Result<string>.Failure($"Øπdanie do NBP nie powiod≥o siÍ: {e.Message}");
+            return Result<string>.Failure($"≈ªƒÖdanie do NBP nie powiod≈Ço siƒô: {e.Message}");
         }
     }
 }
