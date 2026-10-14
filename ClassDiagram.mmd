@@ -1,0 +1,133 @@
+classDiagram
+    direction TB
+
+    class Program {
+        +Main()$ int
+    }
+
+    %% Prezentacja
+    class CurrencyConverterView {
+        -_currencyService: CurrencyService
+        -_defaultView: DefaultView
+        +CurrencyConverterView(currencyService: CurrencyService)
+        -Form1_Load(sender, e) void
+        -ShowError(message: string) void
+    }
+    class DefaultView {
+        -_sourceCurrencyC: ComboBox
+        -_targetCurrencyC: ComboBox
+        -_amountCurrencyC: TextBox
+        -_submitButtonC: Button
+        -_resultLabel: Label
+        -_currencyService: CurrencyService
+        +DefaultView(currencyService, sourceCurrency, targetCurrency, amountCurrency, submitButton, resultLabel)
+        +Exchange(sender, e) void
+        +Refresh(currencyCollection: ICurrencyCollection) void
+    }
+
+    %% Aplikacja
+    class CurrencyService {
+        -_remoteRepository: IRemoteRepository
+        -_parser: IParser~ICurrencyCollection~
+        -_converter: ICurrencyConverter
+        +LoadAsync() Task~Result~ICurrencyCollection~~
+        +Convert(source: ICurrency?, target: ICurrency?, amountText: string) Result~decimal~
+    }
+    class MoneyAmountParser {
+        <<static>>
+        +Parse(input: string)$ Result~decimal~
+    }
+
+    %% Domena
+    class ICurrency {
+        <<interface>>
+        +Name: string
+        +Code: string
+        +Rate: decimal
+        +Multiplier: decimal
+        +UnitRate: decimal
+    }
+    class Currency {
+        +Pln: Currency$
+        -Currency(name, code, rate, multiplier)
+        +Create(name, code, rate, multiplier)$ Result~Currency~
+        +ToString() string
+    }
+    class ICurrencyCollection {
+        <<interface>>
+        +Add(currency: ICurrency) void
+        +Remove(code: string) void
+        +Get(code: string) ICurrency?
+        +GetAll() ICurrency[]
+    }
+    class CurrencyCollection {
+        -_currencies: Dictionary~string, ICurrency~
+        +CurrencyCollection()
+    }
+    class ICurrencyConverter {
+        <<interface>>
+        +Convert(source: ICurrency, target: ICurrency, amount: decimal) decimal
+    }
+    class NBPCurrencyConverter {
+        +Convert(source: ICurrency, target: ICurrency, amount: decimal) decimal
+    }
+    class Result~T~ {
+        +IsSuccess: bool
+        +Value: T?
+        +Error: string?
+        +Success(value: T)$ Result~T~
+        +Failure(error: string)$ Result~T~
+    }
+
+    %% Infrastruktura
+    class IRemoteRepository {
+        <<interface>>
+        +GetData() Task~Result~string~~
+    }
+    class NBPRemoteRepository {
+        -DefaultUrl: string$
+        -NbpEncoding: string$
+        -Client: HttpClient$
+        -_url: string
+        +NBPRemoteRepository(url: string)
+        +GetData() Task~Result~string~~
+    }
+    class IParser~T~ {
+        <<interface>>
+        +Parse(data: string) Result~T~
+    }
+    class NBPXmlParser {
+        -NbpNumberFormat: NumberFormatInfo$
+        +Parse(data: string) Result~ICurrencyCollection~
+        -ParseCurrency(position: XElement)$ Result~Currency~
+        -TryParseNumber(text: string, out value: decimal)$ bool
+        -GetNodeChildByName(parent: XElement, name: string)$ string?
+    }
+
+    %% Realizacje interfejsów
+    Currency ..|> ICurrency
+    CurrencyCollection ..|> ICurrencyCollection
+    NBPCurrencyConverter ..|> ICurrencyConverter
+    NBPRemoteRepository ..|> IRemoteRepository
+    NBPXmlParser ..|> IParser : T = ICurrencyCollection
+
+    %% Powiązania
+    Program ..> CurrencyService : tworzy
+    Program ..> CurrencyConverterView : tworzy
+    Program ..> NBPRemoteRepository : tworzy
+    Program ..> NBPXmlParser : tworzy
+    Program ..> NBPCurrencyConverter : tworzy
+
+    CurrencyConverterView --> CurrencyService
+    CurrencyConverterView *-- DefaultView
+    DefaultView --> CurrencyService
+
+    CurrencyService o-- IRemoteRepository
+    CurrencyService o-- IParser
+    CurrencyService o-- ICurrencyConverter
+    CurrencyService ..> MoneyAmountParser
+
+    CurrencyCollection o-- "0..*" ICurrency
+    NBPXmlParser ..> CurrencyCollection : tworzy
+    NBPXmlParser ..> Currency : tworzy
+    ICurrencyConverter ..> ICurrency
